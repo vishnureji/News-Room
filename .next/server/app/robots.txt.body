@@ -1,0 +1,10 @@
+User-Agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/admin/
+
+User-Agent: Googlebot-News
+Allow: /
+
+Sitemap: https://newsroom.live/sitemap.xml
+Sitemap: https://newsroom.live/news-sitemap.xml

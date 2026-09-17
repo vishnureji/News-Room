@@ -1,6 +1,6 @@
 # AMG Newsroom Operating System
 
-A production-ready, dark-themed newsroom operating system built with **Next.js 15 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS**, **Supabase (PostgreSQL with RLS)**, and **Cloudflare R2** ($0-egress edge storage).
+A production-ready, dark-themed newsroom operating system built with **Next.js 15 (App Router)**, **React 19**, **TypeScript**, **Tailwind CSS**, **Supabase (PostgreSQL with RLS & Supabase Storage)**.
 
 ---
 
@@ -39,9 +39,9 @@ npm start
 
 ## 🌟 Core Feature Modules
 
-- **Editorial CMS & 15+ Block Canvas**: Paragraphs with dropcap, Headings H1-H4, Pullquotes, Quotes, R2 Images with focal-crop, Galleries, 4K Video, Podcast Audio, Tables, Lists, CTAs, Embeds, Ads, Newsletter Units, and Custom HTML.
+- **Editorial CMS & 15+ Block Canvas**: Paragraphs with dropcap, Headings H1-H4, Pullquotes, Quotes, Media Images with focal-crop, Galleries, 4K Video, Podcast Audio, Tables, Lists, CTAs, Embeds, Ads, Newsletter Units, and Custom HTML.
 - **Newsroom Collaboration & Workflows**: Multi-user assignments desk, priority matrix (Breaking/High/Medium/Low), deadline countdowns, threaded editorial comments with `@mentions`, editorial publishing calendar (Month/Week/Day), real-time notification drawer.
-- **Cloudflare R2 Media Hub**: Zero-egress bucket integration (`newsroom-assets-prod`), folder taxonomy (`/images/`, `/videos/`, `/audio/`, `/documents/`, `unused`), interactive focal point crop studio (`16:9`, `4:3`, `1:1`, `9:16`, `3:2`), video player, audio player with Speech-to-Text transcript drawer, deep usage audit, bulk purge.
+- **Supabase Media Storage Hub**: Bucket integration (`newsroom-media`), folder taxonomy (`/images/`, `/videos/`, `/audio/`, `/documents/`, `unused`), interactive focal point crop studio (`16:9`, `4:3`, `1:1`, `9:16`, `3:2`), video player, audio player with Speech-to-Text transcript drawer, deep usage audit, bulk purge.
 - **Modular Homepage Builder & Public Reader Portal**: Drag & drop section reordering, 8 layout archetypes (`hero_plus_two`, `trending_strip`, `three_column_grid`, `magazine_split`, `video_showcase`, `carousel`, `newsletter_cta`, `sponsor_leaderboard`), category hubs, keyword search archive, reader account & bookmarking portal.
 - **Editorial SEO Suite & Syndication**: 96/100 health diagnostics, Google News XML sitemap (`/news-sitemap.xml`), Master post sitemap (`/sitemap.xml`), RSS 2.0 feed (`/feed.xml`), robots.txt, 301/302/410 redirect engine, SERP desktop/mobile preview simulator, Schema.org JSON-LD generator.
 - **Monetization, Advertising & Newsletters**: Multi-format direct CPM ad inventory, 1-click auto-curated email dispatches, subscriber segmentation, 3-tier reader membership ($0, $9/mo Pro, $29/mo Founding Member) with paywall gates.
@@ -50,9 +50,9 @@ npm start
 
 ---
 
-## 🗄️ Database & Cloudflare Storage
+## 🗄️ Database & Supabase Storage
 - **PostgreSQL Schema**: Complete Supabase SQL migration with RLS policies located in [`supabase/migrations/20260917000000_newsroom_core_schema.sql`](./supabase/migrations/20260917000000_newsroom_core_schema.sql).
-- **Cloudflare R2 Bucket**: Bound to custom domain `media.newsroom.com` with immutable edge caching headers (`Cache-Control: public, max-age=31536000, immutable`).
+- **Supabase Storage Bucket**: Public bucket `newsroom-media` with edge delivery and automated image optimization.
 
 ---
 

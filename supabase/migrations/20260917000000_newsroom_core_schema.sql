@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS series (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Media (Cloudflare R2 Integration)
+-- Media (Supabase Storage Integration)
 CREATE TABLE IF NOT EXISTS media (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     filename TEXT NOT NULL,
@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS media (
     file_size BIGINT NOT NULL,
     width INT,
     height INT,
-    r2_key TEXT UNIQUE NOT NULL,
+    bucket_name TEXT NOT NULL DEFAULT 'newsroom-media',
+    storage_path TEXT NOT NULL,
+    r2_key TEXT, -- preserved for backward compatibility
     url TEXT NOT NULL,
     alt_text TEXT,
     caption TEXT,
@@ -213,3 +215,47 @@ CREATE POLICY "Public Read Published Articles" ON articles
 -- Authenticated editorial staff can view and manage articles
 CREATE POLICY "Staff Full Article Access" ON articles
     FOR ALL TO authenticated USING (true);
+
+-- Public can read media records
+CREATE POLICY "Public Read Media" ON media
+    FOR SELECT USING (true);
+
+-- Authenticated editorial staff can manage media records
+CREATE POLICY "Staff Manage Media" ON media
+    FOR ALL TO authenticated USING (true);
+
+-- ==========================================
+-- Supabase Storage Bucket & Policies
+-- ==========================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'newsroom-media',
+    'newsroom-media',
+    true,
+    524288000, -- 500 MB max file size
+    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/aac', 'application/pdf', 'text/csv']
+)
+ON CONFLICT (id) DO UPDATE SET
+    public = true,
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+-- Storage Object Policies for 'newsroom-media' bucket
+CREATE POLICY "Public Access for Newsroom Media"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'newsroom-media');
+
+CREATE POLICY "Staff Upload Newsroom Media"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'newsroom-media');
+
+CREATE POLICY "Staff Update Newsroom Media"
+    ON storage.objects FOR UPDATE
+    TO authenticated
+    USING (bucket_id = 'newsroom-media');
+
+CREATE POLICY "Staff Delete Newsroom Media"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'newsroom-media');

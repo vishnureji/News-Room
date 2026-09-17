@@ -66,7 +66,7 @@ const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
   {
     group: 'Media & Layout',
     items: [
-      { label: 'Cloudflare R2 Media', href: '/admin/media', icon: ImageIcon },
+      { label: 'Media Storage (Supabase)', href: '/admin/media', icon: ImageIcon },
       { label: 'Homepage Builder', href: '/admin/homepage-builder', icon: Layers },
       { label: 'Menus & Navigation', href: '/admin/menus', icon: Sliders },
     ],

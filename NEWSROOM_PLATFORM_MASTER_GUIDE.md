@@ -2,7 +2,7 @@
 
 > **Version:** 1.0.0-PROD  
 > **Target Audience:** Engineering Leads, DevOps, Editors-in-Chief, Editorial Teams & System Administrators.  
-> **Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Supabase (PostgreSQL with RLS), Cloudflare R2 ($0-egress edge storage).
+> **Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Supabase (PostgreSQL with RLS + Supabase Storage for Media).
 
 ---
 
@@ -12,14 +12,14 @@
 3. [Comprehensive Feature Catalog](#3-comprehensive-feature-catalog)
    - [3.1 Editorial CMS & 15+ Block Canvas](#31-editorial-cms--15-block-canvas)
    - [3.2 Newsroom Collaboration & Publishing Workflow](#32-newsroom-collaboration--publishing-workflow)
-   - [3.3 Cloudflare R2 Media Management & Focal Crop Studio](#33-cloudflare-r2-media-management--focal-crop-studio)
+   - [3.3 Supabase Media Storage Management & Focal Crop Studio](#33-supabase-media-storage-management--focal-crop-studio)
    - [3.4 Modular Homepage Builder & Public Reader Portal](#34-modular-homepage-builder--public-reader-portal)
    - [3.5 Editorial SEO Suite, XML Sitemaps & Redirect Engine](#35-editorial-seo-suite-xml-sitemaps--redirect-engine)
    - [3.6 Monetization, Advertising & Newsletter Automation](#36-monetization-advertising--newsletter-automation)
    - [3.7 Editorial AI Co-Pilot & 1st-Party Analytics](#37-editorial-ai-co-pilot--1st-party-analytics)
    - [3.8 Granular Role-Based Access Control (RBAC)](#38-granular-role-based-access-control-rbac)
 4. [Database Schema & Supabase Setup](#4-database-schema--supabase-setup)
-5. [Cloudflare R2 Bucket & Edge CDN Configuration](#5-cloudflare-r2-bucket--edge-cdn-configuration)
+5. [Supabase Storage Bucket & Edge CDN Configuration](#5-supabase-storage-bucket--edge-cdn-configuration)
 6. [Environment Variables Reference](#6-environment-variables-reference)
 7. [Deployment & Production Hosting Guide](#7-deployment--production-hosting-guide)
    - [Deploying to Vercel](#deploying-to-vercel)
@@ -35,8 +35,8 @@ The **AMG Newsroom Operating System** is an enterprise-grade digital publishing 
 
 ### Core Design Principles:
 - **Visual Distinction:** Curated dark-themed newsroom aesthetic with high contrast, editorial serif headlines (`Playfair Display` / `Cinzel`), clean sans-serif UI typography (`Inter` / `Outfit`), and smooth micro-animations.
-- **Decoupled Architecture:** The Next.js frontend interacts exclusively through a unified Service Layer (`lib/services/newsroom-service.ts`), enabling instant local evaluation or seamless backend binding to live Supabase PostgreSQL and Cloudflare R2 buckets.
-- **Zero-Egress Media Economics:** All high-resolution photography, 4K video feeds, podcasts, and PDF annexures are routed through Cloudflare R2, eliminating expensive cloud egress fees.
+- **Decoupled Architecture:** The Next.js frontend interacts exclusively through a unified Service Layer (`lib/services/newsroom-service.ts`), enabling instant local evaluation or seamless backend binding to live Supabase PostgreSQL and Supabase Storage (`newsroom-media`).
+- **High-Performance Global Media Pipeline:** All high-resolution photography, 4K video feeds, podcasts, and PDF annexures are stored in Supabase Storage with global CDN distribution and edge image resizing.
 - **Full SEO & Google News Syndication:** Instant generation of Google News XML sitemaps, master post sitemaps, RSS 2.0 feeds, `robots.txt`, and automated `NewsArticle` JSON-LD schemas.
 
 ---
@@ -51,7 +51,7 @@ The **AMG Newsroom Operating System** is an enterprise-grade digital publishing 
              [ Public Reader Portal ]                        [ Admin Newsroom Shell ]
            - Homepage (8 Dynamic Layouts)                  - Command Desk & Story Canvas
            - Article Reader (15+ Blocks)                   - Assignment Desk & Calendar
-           - Category Archives                             - Cloudflare R2 Media Studio
+           - Category Archives                             - Supabase Media Studio
            - Search, Account & Paywall                     - SEO & Redirect Engine
            - RSS 2.0 & News Sitemaps                       - Ads & Newsletter Desks
                       │                                               │
@@ -62,11 +62,11 @@ The **AMG Newsroom Operating System** is an enterprise-grade digital publishing 
                                               │
                       ┌───────────────────────┴───────────────────────┐
                       ▼                                               ▼
-         [ SUPABASE POSTGRESQL + RLS ]                     [ CLOUDFLARE R2 BUCKET ]
-       - 18 Relational Tables                            - newsroom-assets-prod
-       - Row-Level Security (RBAC)                       - WebP / AVIF Variants
+         [ SUPABASE POSTGRESQL + RLS ]                     [ SUPABASE STORAGE BUCKET ]
+       - 18 Relational Tables                            - newsroom-media (500MB Limit)
+       - Row-Level Security (RBAC)                       - WebP / AVIF Variants & Image Render
        - Full-Text Search Indices                        - 4K Video Streams & Audio Podcasts
-       - Realtime Revisions & Comments                   - Immutable Edge Caching
+       - Realtime Revisions & Comments                   - Public Edge CDN Distribution
 ```
 
 ---
@@ -103,14 +103,14 @@ The **AMG Newsroom Operating System** is an enterprise-grade digital publishing 
 - **Breaking News Broadcast (`/admin/breaking-news`):** Broadcast high-priority red alert banners across the public header with target URLs.
 - **Threaded Review Comments:** In-editor comment system with `@mentions` and resolve/reopen states.
 
-### 3.3 Cloudflare R2 Media Management & Focal Crop Studio
-- **Storage Metrics Bar:** Live tracking of storage utilized, total assets, WebP/AVIF images, 4K videos, audio podcasts, PDF whitepapers, and **$0 egress fees saved**.
+### 3.3 Supabase Media Storage Management & Focal Crop Studio
+- **Storage Metrics Bar:** Live tracking of storage utilized, total assets, WebP/AVIF images, 4K videos, audio podcasts, PDF whitepapers, and global edge acceleration.
 - **Categorized Folder Views:** `/images/`, `/videos/`, `/audio/`, `/documents/`, and `unused` (orphan media detection).
 - **Interactive Focal-Point Crop Studio:** Click or drag on the canvas to set exact `focal_x` and `focal_y` coordinates.
 - **Live Multi-Aspect Simulator:** Live preview for `16:9` (Lead Hero), `4:3` (Story Card), `1:1` (Square/Social), `9:16` (Vertical Story), and `3:2` (Editorial Classic).
 - **Deep Usage Audit:** Lists every published article, section hub, and newsletter referencing each media asset with 1-click jump links directly into the story editor.
 - **Safe Deletion & Bulk Purge:** Blocks deletion of assets in active use while enabling 1-click bulk cleanup of orphan assets.
-- **Presigned R2 Upload Drawer:** Mime-type auto-detection, credit attribution, alt text, and simulated WebP/AVIF multi-device variant generation (`320w`, `1024w`, `1600w`, `2400w`).
+- **Direct Supabase Storage Upload Drawer:** Mime-type auto-detection, credit attribution, alt text, and simulated WebP/AVIF multi-device variant generation (`320w`, `1024w`, `1600w`, `2400w`).
 
 ### 3.4 Modular Homepage Builder & Public Reader Portal
 - **Homepage Layout Builder (`/admin/homepage-builder`):**
@@ -201,45 +201,48 @@ supabase db push
 
 ---
 
-## 5. Cloudflare R2 Bucket & Edge CDN Configuration
+## 5. Supabase Storage Bucket & Edge CDN Configuration
 
-### Step 1: Create R2 Bucket
-1. Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Navigate to **R2 Object Storage** > **Create Bucket**.
-3. Name the bucket: `newsroom-assets-prod`.
-4. Set default storage class to **Standard**.
-
-### Step 2: Configure Custom Domain (Zero-Egress CDN)
-1. Inside bucket settings, click **Connect Domain**.
-2. Attach your custom media domain: `media.yourdomain.com` (e.g. `media.newsroom.com`).
-3. Cloudflare automatically issues a global SSL certificate and caches assets across 300+ edge PoPs.
-
-### Step 3: CORS Configuration
-In bucket settings, add the following CORS policy:
-```json
-[
-  {
-    "AllowedOrigins": [
-      "https://yourdomain.com",
-      "https://*.yourdomain.com",
-      "http://localhost:3000",
-      "http://localhost:3001"
-    ],
-    "AllowedMethods": ["GET", "PUT", "POST", "HEAD", "DELETE"],
-    "AllowedHeaders": ["*"],
-    "ExposeHeaders": ["ETag"],
-    "MaxAgeSeconds": 3600
-  }
-]
+### Step 1: Automated Bucket Creation via Migration
+The `newsroom-media` bucket is automatically created when you run the schema migration (`supabase/migrations/20260917000000_newsroom_core_schema.sql`):
+```sql
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'newsroom-media',
+    'newsroom-media',
+    true,
+    524288000, -- 500 MB limit
+    ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/aac', 'application/pdf', 'text/csv']
+)
+ON CONFLICT (id) DO NOTHING;
 ```
 
-### Step 4: S3-Compatible API Credentials
-1. Under Cloudflare R2, navigate to **Manage R2 API Tokens**.
-2. Click **Create API Token** with `Object Read & Write` permissions.
-3. Note down:
-   - **Access Key ID**
-   - **Secret Access Key**
-   - **Endpoint URL**: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
+### Step 2: Storage Row-Level Security (RLS) Policies
+Ensure public read access and authenticated staff write access:
+```sql
+-- Public can view media objects
+CREATE POLICY "Public Access for Newsroom Media"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'newsroom-media');
+
+-- Authenticated editors can upload media
+CREATE POLICY "Staff Upload Newsroom Media"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'newsroom-media');
+
+-- Authenticated editors can delete media
+CREATE POLICY "Staff Delete Newsroom Media"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'newsroom-media');
+```
+
+### Step 3: Supabase Image Transformation URLs
+Supabase Storage supports automatic on-the-fly image transformations:
+```
+https://<PROJECT-REF>.supabase.co/storage/v1/render/image/public/newsroom-media/<PATH>?width=800&quality=80&format=origin
+```
 
 ---
 
@@ -263,13 +266,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # ==========================================
-# 3. CLOUDFLARE R2 MEDIA STORAGE
+# 3. SUPABASE MEDIA STORAGE
 # ==========================================
-R2_ACCOUNT_ID=your_cloudflare_account_id
-R2_ACCESS_KEY_ID=your_r2_access_key_id
-R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_BUCKET_NAME=newsroom-assets-prod
-NEXT_PUBLIC_R2_PUBLIC_URL=https://media.newsroom.com
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=newsroom-media
+SUPABASE_STORAGE_MAX_FILE_SIZE=524288000
+NEXT_PUBLIC_STORAGE_CDN_URL=https://your-project-ref.supabase.co/storage/v1/object/public/newsroom-media
 
 # ==========================================
 # 4. STRIPE / MONETIZATION (Optional for Live Billing)

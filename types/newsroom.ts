@@ -112,7 +112,9 @@ export interface MediaAsset {
   file_size: number;
   width?: number;
   height?: number;
-  r2_key: string;
+  storage_path: string;
+  r2_key?: string;
+  bucket_name?: string;
   url: string;
   alt_text?: string;
   caption?: string;

@@ -23,7 +23,7 @@ export default function SettingsAdminPage() {
             Newsroom Settings & Integrations
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Global metadata, branding tokens, Cloudflare R2 bucket connection and Supabase parameters.
+            Global metadata, branding tokens, Supabase Storage bucket connection and database parameters.
           </p>
         </div>
       </div>
@@ -68,10 +68,10 @@ export default function SettingsAdminPage() {
 
             <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">
               <div className="flex items-center justify-between text-slate-400">
-                <span>Cloudflare R2 Media</span>
+                <span>Supabase Media Storage</span>
                 <Cloud className="w-3.5 h-3.5 text-blue-400" />
               </div>
-              <div className="font-mono text-blue-400 font-bold">Active CDN Route</div>
+              <div className="font-mono text-blue-400 font-bold">Active (newsroom-media)</div>
             </div>
 
             <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-1">

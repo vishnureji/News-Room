@@ -80,7 +80,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     file_size: 420000,
     width: 1920,
     height: 1080,
-    r2_key: 'media/images/2026/09/parliament-budget-session.webp',
+    storage_path: 'newsroom-media/images/2026/09/parliament-budget-session.webp',
+    r2_key: 'newsroom-media/images/2026/09/parliament-budget-session.webp',
+    bucket_name: 'newsroom-media',
     url: 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80',
     alt_text: 'Parliament central hall during annual fiscal budget presentation',
     caption: 'The national legislature convened for the landmark economic agenda.',
@@ -116,7 +118,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     file_size: 890000,
     width: 2400,
     height: 1350,
-    r2_key: 'media/images/2026/09/ai-datacenter-compute.webp',
+    storage_path: 'newsroom-media/images/2026/09/ai-datacenter-compute.webp',
+    r2_key: 'newsroom-media/images/2026/09/ai-datacenter-compute.webp',
+    bucket_name: 'newsroom-media',
     url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80',
     alt_text: 'Modern green data center rack with optical computing interconnects',
     caption: 'Next-generation computing cluster powering distributed neural models.',
@@ -152,7 +156,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     file_size: 650000,
     width: 2000,
     height: 1125,
-    r2_key: 'media/images/2026/09/solar-energy-grid.webp',
+    storage_path: 'newsroom-media/images/2026/09/solar-energy-grid.webp',
+    r2_key: 'newsroom-media/images/2026/09/solar-energy-grid.webp',
+    bucket_name: 'newsroom-media',
     url: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1200&auto=format&fit=crop&q=80',
     alt_text: 'Gigawatt scale solar array at sunset',
     caption: 'Renewable energy infrastructure reaches new grid integration milestones.',
@@ -177,7 +183,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     file_size: 780000,
     width: 1920,
     height: 1080,
-    r2_key: 'media/images/2026/09/aviation-terminal-transit.webp',
+    storage_path: 'newsroom-media/images/2026/09/aviation-terminal-transit.webp',
+    r2_key: 'newsroom-media/images/2026/09/aviation-terminal-transit.webp',
+    bucket_name: 'newsroom-media',
     url: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200&auto=format&fit=crop&q=80',
     alt_text: 'Modern international airport terminal concourse',
     caption: 'Global air travel passenger traffic sets new post-decade highs.',
@@ -203,7 +211,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     width: 3840,
     height: 2160,
     duration: '04:32',
-    r2_key: 'media/videos/2026/09/press-conference-briefing.mp4',
+    storage_path: 'newsroom-media/videos/2026/09/press-conference-briefing.mp4',
+    r2_key: 'newsroom-media/videos/2026/09/press-conference-briefing.mp4',
+    bucket_name: 'newsroom-media',
     url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     alt_text: 'Finance Ministry Post-Budget Press Conference 4K Broadcast Feed',
     caption: 'Finance secretary answers media questions on fiscal glide path and capex allocation.',
@@ -228,7 +238,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     mime_type: 'audio/mpeg',
     file_size: 24500000,
     duration: '26:18',
-    r2_key: 'media/audio/2026/09/executive-editor-podcast-ep14.mp3',
+    storage_path: 'newsroom-media/audio/2026/09/executive-editor-podcast-ep14.mp3',
+    r2_key: 'newsroom-media/audio/2026/09/executive-editor-podcast-ep14.mp3',
+    bucket_name: 'newsroom-media',
     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     alt_text: 'The Daily Dispatch Podcast: Ep 14 - Decoding the Semiconductor Subsidy Race',
     caption: 'Executive Editor Vishnu Reji interviews leading foundry architects.',
@@ -252,7 +264,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     filename: 'fiscal-policy-whitepaper-2026.pdf',
     mime_type: 'application/pdf',
     file_size: 8920000,
-    r2_key: 'media/documents/2026/09/fiscal-policy-whitepaper-2026.pdf',
+    storage_path: 'newsroom-media/documents/2026/09/fiscal-policy-whitepaper-2026.pdf',
+    r2_key: 'newsroom-media/documents/2026/09/fiscal-policy-whitepaper-2026.pdf',
+    bucket_name: 'newsroom-media',
     url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     alt_text: 'Official Fiscal Policy & Tax Annexure Analysis 2026-27 (Full 48-Page PDF Report)',
     caption: 'Comprehensive breakdown of budget allocations, debt-to-GDP trajectories and tax exemptions.',
@@ -277,7 +291,9 @@ export const INITIAL_MEDIA: MediaAsset[] = [
     file_size: 512000,
     width: 1920,
     height: 1080,
-    r2_key: 'media/images/2026/08/orphan-stock-city-night.webp',
+    storage_path: 'newsroom-media/images/2026/08/orphan-stock-city-night.webp',
+    r2_key: 'newsroom-media/images/2026/08/orphan-stock-city-night.webp',
+    bucket_name: 'newsroom-media',
     url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1200&auto=format&fit=crop&q=80',
     alt_text: 'Metropolis skyline illuminated at dusk (Unused Orphan Asset)',
     caption: 'Archived cityscape stock image currently not referenced in any story or newsletter.',
@@ -1273,11 +1289,12 @@ class NewsroomService {
     folder?: 'images' | 'videos' | 'audio' | 'documents';
     duration?: string;
     transcript?: string;
+    bucket_name?: string;
   }): MediaAsset {
     const folder = file.folder || (file.mime_type.startsWith('video') ? 'videos' : file.mime_type.startsWith('audio') ? 'audio' : file.mime_type.includes('pdf') ? 'documents' : 'images');
     const year = new Date().getFullYear().toString();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    const r2Key = `media/${folder}/${year}/${month}/${file.filename}`;
+    const storagePath = `newsroom-media/${folder}/${year}/${month}/${file.filename}`;
 
     const newMedia: MediaAsset = {
       id: `med-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -1286,7 +1303,9 @@ class NewsroomService {
       file_size: file.file_size,
       width: folder === 'images' ? 1920 : folder === 'videos' ? 3840 : undefined,
       height: folder === 'images' ? 1080 : folder === 'videos' ? 2160 : undefined,
-      r2_key: r2Key,
+      bucket_name: file.bucket_name || 'newsroom-media',
+      storage_path: storagePath,
+      r2_key: storagePath, // retained for backward compatibility
       url: file.url,
       alt_text: file.alt_text || file.filename.replace(/\.[^/.]+$/, ''),
       caption: file.caption || '',
@@ -1365,7 +1384,7 @@ class NewsroomService {
     return { deletedCount, skippedCount };
   }
 
-  getR2StorageStats() {
+  getSupabaseStorageStats() {
     const totalBytes = this.media.reduce((acc, curr) => acc + (curr.file_size || 0), 0);
     const imageCount = this.media.filter(m => (m.folder || 'images') === 'images').length;
     const videoCount = this.media.filter(m => m.folder === 'videos').length;
@@ -1382,11 +1401,17 @@ class NewsroomService {
       audioCount,
       docCount,
       unusedCount,
-      bucketName: 'newsroom-assets-prod',
-      customDomain: 'media.newsroom.com',
-      cdnCacheStatus: 'Active (Global Edge Cache - TTL 365d)',
-      egressBandwidthSaved: '1.42 TB / mo'
+      bucketName: 'newsroom-media',
+      storageProvider: 'Supabase Storage',
+      customDomain: 'https://orfnpgersbbytnjnxrvt.supabase.co/storage/v1/object/public/newsroom-media',
+      cdnCacheStatus: 'Active (Supabase Global Edge Storage CDN - TTL 365d)',
+      egressBandwidthSaved: 'Accelerated Edge CDN'
     };
+  }
+
+  // Alias for backward compatibility
+  getR2StorageStats() {
+    return this.getSupabaseStorageStats();
   }
 
   // --- Taxonomies ---
@@ -1572,7 +1597,7 @@ class NewsroomService {
         { label: 'Google News Schema (NewsArticle JSON-LD)', status: 'passed', detail: '100% compliant across published feed' },
         { label: 'Canonical URL Self-Referencing Audit', status: 'passed', detail: 'Zero duplicate canonical loops detected' },
         { label: 'OpenGraph & Twitter Card Meta Tags', status: 'passed', detail: 'Images, titles, and descriptions present' },
-        { label: 'Cloudflare R2 Media Alt-Text Compliance', status: 'passed', detail: `${withAltText.length}/${totalArticles} featured images have descriptive alt text` },
+        { label: 'Supabase Storage Media Alt-Text Compliance', status: 'passed', detail: `${withAltText.length}/${totalArticles} featured images have descriptive alt text` },
         { label: 'Meta Description Length (120-160 chars)', status: 'passed', detail: `${withMetaDesc.length}/${totalArticles} within ideal search snippet length` },
         { label: 'XML Sitemaps (News, Standard & RSS)', status: 'passed', detail: 'Auto-updating with hourly cache revalidation' }
       ]
