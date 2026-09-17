@@ -1,0 +1,7 @@
+{
+  "/news-sitemap.xml/route": "app/news-sitemap.xml/route.js",
+  "/(public)/page": "app/(public)/page.js",
+  "/(public)/[category]/page": "app/(public)/[category]/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/settings/page": "app/admin/settings/page.js"
+}
