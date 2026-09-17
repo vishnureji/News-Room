@@ -21,6 +21,7 @@ import {
   Check
 } from 'lucide-react';
 import { newsroomService } from '@/lib/services/newsroom-service';
+import { siteConfig } from '@/lib/config';
 import { Article } from '@/types/newsroom';
 import { formatDate } from '@/lib/utils';
 
@@ -75,14 +76,14 @@ export default function PublicArticlePage() {
     author: article.authors.map(a => ({
       '@type': 'Person',
       name: a.display_name,
-      url: `https://newsroom.live/author/${a.id}`
+      url: `${siteConfig.url}/author/${a.id}`
     })),
     publisher: {
       '@type': 'Organization',
-      name: 'AMG Newsroom',
+      name: siteConfig.name,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://newsroom.live/logo.png'
+        url: `${siteConfig.url}/logo.png`
       }
     }
   };

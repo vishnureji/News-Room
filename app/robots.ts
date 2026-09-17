@@ -1,6 +1,9 @@
 import { MetadataRoute } from 'next';
+import { siteConfig } from '@/lib/config';
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = siteConfig.url.replace(/\/$/, '');
+
   return {
     rules: [
       {
@@ -14,8 +17,8 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: [
-      'https://newsroom.live/sitemap.xml',
-      'https://newsroom.live/news-sitemap.xml',
+      `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/news-sitemap.xml`,
     ],
   };
 }

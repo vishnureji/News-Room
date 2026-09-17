@@ -18,6 +18,8 @@ import {
   RoleType,
   SubscriptionPlan
 } from '@/types/newsroom';
+import { db } from '@/lib/supabase/db';
+import { siteConfig } from '@/lib/config';
 
 export const INITIAL_AUTHORS: AuthorProfile[] = [
   {
@@ -1028,7 +1030,32 @@ class NewsroomService {
     return this.articles.find(a => a.id === id);
   }
 
-  saveArticle(article: Partial<Article> & { id: string }, saveRevision: boolean = true): Article {
+  // Async Supabase Sync
+  async syncFromSupabase(): Promise<void> {
+    try {
+      const dbArticles = await db.getArticles();
+      if (dbArticles && dbArticles.length > 0) {
+        this.articles = dbArticles;
+      }
+      const dbCategories = await db.getCategories();
+      if (dbCategories && dbCategories.length > 0) {
+        this.categories = dbCategories;
+      }
+      const dbTags = await db.getTags();
+      if (dbTags && dbTags.length > 0) {
+        this.tags = dbTags;
+      }
+      const dbMedia = await db.getMedia();
+      if (dbMedia && dbMedia.length > 0) {
+        this.media = dbMedia;
+      }
+    } catch (e) {
+      console.warn('NewsroomService background sync note:', e);
+    }
+  }
+
+  saveArticle(article: Partial<Article> & { id: string }, saveRevision: boolean = true, actorName?: string): Article {
+    const authorName = actorName || this.authors[0]?.display_name || 'Editorial Desk';
     const idx = this.articles.findIndex(a => a.id === article.id);
     if (idx >= 0) {
       const existing = this.articles[idx];
@@ -1045,7 +1072,7 @@ class NewsroomService {
           id: `rev-${article.id}-${nextVer}`,
           article_id: article.id,
           version_number: nextVer,
-          changed_by_name: 'Vishnu Reji (Editor)',
+          changed_by_name: authorName,
           title: updated.title,
           content_blocks: JSON.parse(JSON.stringify(updated.content_blocks)),
           created_at: new Date().toISOString(),
@@ -1056,6 +1083,7 @@ class NewsroomService {
       }
 
       this.articles[idx] = updated;
+      db.upsertArticle(updated).catch(() => {});
       return updated;
     } else {
       const newArticle: Article = {
@@ -1067,7 +1095,7 @@ class NewsroomService {
         content_blocks: article.content_blocks || [
           { id: `blk-${Date.now()}`, type: 'paragraph', content: { text: '' } }
         ],
-        authors: article.authors || [INITIAL_AUTHORS[0]],
+        authors: article.authors || [this.authors[0] || INITIAL_AUTHORS[0]],
         tags: article.tags || [],
         status: article.status || 'draft',
         visibility: article.visibility || 'public',
@@ -1082,7 +1110,7 @@ class NewsroomService {
         revisions_count: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: 'auth-1'
+        created_by: this.authors[0]?.id || 'auth-1'
       };
 
       newArticle.revisions = [
@@ -1090,7 +1118,7 @@ class NewsroomService {
           id: `rev-${newArticle.id}-1`,
           article_id: newArticle.id,
           version_number: 1,
-          changed_by_name: 'Vishnu Reji',
+          changed_by_name: authorName,
           title: newArticle.title,
           content_blocks: JSON.parse(JSON.stringify(newArticle.content_blocks)),
           created_at: new Date().toISOString(),
@@ -1099,44 +1127,46 @@ class NewsroomService {
       ];
 
       this.articles.unshift(newArticle);
+      db.upsertArticle(newArticle).catch(() => {});
       return newArticle;
     }
   }
 
-  updateArticleStatus(id: string, status: ArticleStatus, actorName: string = 'Vishnu Reji'): Article | undefined {
+  updateArticleStatus(id: string, status: ArticleStatus, actorName?: string): Article | undefined {
     const art = this.getArticleById(id);
+    const actor = actorName || this.authors[0]?.display_name || 'Editorial Staff';
     if (art) {
-      const oldStatus = art.status;
       art.status = status;
       if (status === 'published' && !art.published_at) {
         art.published_at = new Date().toISOString();
       }
       art.updated_at = new Date().toISOString();
+      db.upsertArticle(art).catch(() => {});
 
       // Trigger automatic Newsroom Collaboration notification
       if (status === 'in_review') {
         this.createNotification({
           type: 'review_requested',
           title: 'Article Submitted for Desk Review',
-          message: `${actorName} submitted "${art.title}" for editorial approval.`,
+          message: `${actor} submitted "${art.title}" for editorial approval.`,
           target_url: `/admin/articles/${art.id}/edit`,
-          actor_name: actorName
+          actor_name: actor
         });
       } else if (status === 'changes_requested') {
         this.createNotification({
           type: 'changes_requested',
           title: 'Editorial Changes Requested',
-          message: `${actorName} requested revisions on "${art.title}".`,
+          message: `${actor} requested revisions on "${art.title}".`,
           target_url: `/admin/articles/${art.id}/edit`,
-          actor_name: actorName
+          actor_name: actor
         });
       } else if (status === 'approved') {
         this.createNotification({
           type: 'article_approved',
           title: 'Story Approved for Publication',
-          message: `"${art.title}" was approved by ${actorName}.`,
+          message: `"${art.title}" was approved by ${actor}.`,
           target_url: `/admin/articles/${art.id}/edit`,
-          actor_name: actorName
+          actor_name: actor
         });
       } else if (status === 'published') {
         this.createNotification({
@@ -1144,11 +1174,32 @@ class NewsroomService {
           title: 'Story Published Live',
           message: `"${art.title}" is now broadcasting on reader portal.`,
           target_url: `/article/${art.slug}`,
-          actor_name: actorName
+          actor_name: actor
         });
       }
     }
     return art;
+  }
+
+  getComments(): { id: string; article_id: string; author_name: string; content: string; status: 'approved' | 'pending' | 'rejected'; created_at: string }[] {
+    return [
+      {
+        id: 'comm-1',
+        article_id: 'art-1',
+        author_name: 'Vikram Joshi',
+        content: 'Remarkable depth on the semiconductor supply chain and capex outlays. Essential reading.',
+        status: 'approved',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 'comm-2',
+        article_id: 'art-2',
+        author_name: 'Devika Menon',
+        content: 'Is there an updated timeline on the photonic chip testbench deployment in Taiwan?',
+        status: 'pending',
+        created_at: new Date().toISOString()
+      }
+    ];
   }
 
   updateArticlePublishDate(articleId: string, scheduledDate: string): Article | undefined {

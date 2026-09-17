@@ -17,25 +17,33 @@ import {
   Rss
 } from 'lucide-react';
 import { newsroomService } from '@/lib/services/newsroom-service';
+import { siteConfig } from '@/lib/config';
 import { BreakingNewsItem, Category } from '@/types/newsroom';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const [breaking, setBreaking] = useState<BreakingNewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [currentDate] = useState(
-    new Date(2026, 8, 17).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  );
+  const [currentDate, setCurrentDate] = useState<string>('');
 
   useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    );
     setBreaking(newsroomService.getBreakingNews());
     setCategories(newsroomService.getCategories());
+    newsroomService.syncFromSupabase().then(() => {
+      setBreaking(newsroomService.getBreakingNews());
+      setCategories(newsroomService.getCategories());
+    });
   }, []);
+
+  const siteInitials = siteConfig.name.slice(0, 3).toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0b0f19] text-slate-100 font-sans">
@@ -43,10 +51,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <div className="border-b border-slate-800/80 bg-[#080b12] text-slate-400 text-xs py-1.5 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[11px] text-slate-300">{currentDate}</span>
+            <span className="font-mono text-[11px] text-slate-300">{currentDate || 'Today'}</span>
             <span className="hidden md:inline">•</span>
             <span className="hidden md:inline text-[11px] text-emerald-400">
-              Edition: Global / English
+              Edition: {siteConfig.edition}
             </span>
           </div>
 
@@ -80,15 +88,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </button>
 
             <Link href="/" className="group flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-red-700 flex items-center justify-center font-bold text-white shadow-lg shadow-rose-900/30 text-lg">
-                AMG
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-red-700 flex items-center justify-center font-bold text-white shadow-lg shadow-rose-900/30 text-base">
+                {siteInitials}
               </div>
               <div>
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-white font-headline group-hover:text-rose-400 transition-colors">
-                  NEWSROOM
+                  {siteConfig.name}
                 </span>
                 <span className="block text-[10px] uppercase font-mono tracking-widest text-slate-400">
-                  Global Journalism & Intelligence
+                  {siteConfig.description}
                 </span>
               </div>
             </Link>
@@ -98,94 +106,109 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="flex items-center gap-3">
             <Link
               href="/search"
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition-all flex items-center gap-2 text-xs"
               title="Search Archive"
             >
               <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Search Dispatch</span>
             </Link>
 
             <Link
               href="/account"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-bold shadow-md shadow-rose-950/40 transition-all"
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/50 transition-all flex items-center gap-1.5"
             >
-              Subscribe Premium
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Subscribe</span>
             </Link>
           </div>
         </div>
 
-        {/* Primary Navigation Bar (Desktop) */}
-        <nav className="hidden lg:flex border-t border-slate-800/80 max-w-7xl mx-auto px-8 py-2.5 items-center justify-between text-xs font-semibold text-slate-300">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="hover:text-rose-400 transition-colors">
-              Front Page
+        {/* Categories Bar */}
+        <nav className="hidden lg:block border-t border-slate-800/60 bg-[#0a0e17]">
+          <div className="max-w-7xl mx-auto px-8 flex items-center gap-6 overflow-x-auto py-2.5 text-xs font-semibold text-slate-300">
+            <Link href="/" className="hover:text-rose-400 whitespace-nowrap text-rose-400 flex items-center gap-1.5">
+              <span>Frontpage</span>
             </Link>
             {categories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/${cat.slug}`}
-                className="hover:text-rose-400 transition-colors"
+                className="hover:text-white whitespace-nowrap text-slate-300 transition-colors"
               >
                 {cat.name}
               </Link>
             ))}
           </div>
-
-          <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px]">
-            <Link href="/newsletter" className="hover:text-rose-400 transition-colors">
-              Daily Intelligence Brief
-            </Link>
-          </div>
         </nav>
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-800 bg-[#0a0d14] px-6 py-4 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Verticals</div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="lg:hidden border-t border-slate-800 bg-[#0a0e17] p-4 space-y-3 animate-in fade-in">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2">
+              Coverage Verticals
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 text-slate-200 hover:text-rose-400"
+                className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-rose-400"
               >
-                Front Page
+                Frontpage
               </Link>
               {categories.map((cat) => (
                 <Link
                   key={cat.id}
                   href={`/${cat.slug}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-1.5 text-slate-200 hover:text-rose-400"
+                  className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200"
                 >
                   {cat.name}
                 </Link>
               ))}
             </div>
+            <div className="pt-2 border-t border-slate-800 flex justify-between text-xs text-slate-400">
+              <Link href="/admin" className="hover:text-white">
+                Admin Newsroom
+              </Link>
+              <Link href="/newsletter" className="hover:text-white">
+                Newsletter
+              </Link>
+              <Link href="/account" className="hover:text-white">
+                Account
+              </Link>
+            </div>
           </div>
         )}
       </header>
 
-      {/* Breaking News Ticker if active */}
+      {/* Breaking News High-Priority Header Banner */}
       {breaking.length > 0 && (
-        <div className="bg-red-950/90 border-b border-red-800 px-4 sm:px-8 py-2.5">
+        <div className="bg-red-950/90 border-b border-red-800/80 px-4 sm:px-8 py-2.5">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-black tracking-wider uppercase shrink-0 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-                Breaking
+              <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black tracking-wider uppercase shrink-0 animate-pulse">
+                <Radio className="w-3 h-3" />
+                <span>Breaking</span>
               </span>
-              <Link
-                href={breaking[0].target_url || '/'}
-                className="text-xs sm:text-sm font-semibold text-white hover:underline truncate"
-              >
+              <p className="text-xs sm:text-sm font-semibold text-white truncate">
                 {breaking[0].title}
-              </Link>
+              </p>
             </div>
+            {breaking[0].target_url && (
+              <Link
+                href={breaking[0].target_url}
+                className="text-xs text-red-200 hover:text-white flex items-center gap-1 shrink-0 font-medium underline underline-offset-2"
+              >
+                <span>Read Story</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
           </div>
         </div>
       )}
 
-      {/* Public Page Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8">{children}</main>
+      {/* Main Page Slot */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 pt-8">{children}</main>
 
       {/* Public Footer */}
       <footer className="border-t border-slate-800 bg-[#080b12] py-12 px-4 sm:px-8 text-xs text-slate-400 mt-16">
@@ -193,12 +216,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-rose-600 flex items-center justify-center font-bold text-white text-xs">
-                AMG
+                {siteInitials}
               </div>
-              <span className="text-base font-bold text-slate-100 font-headline">AMG Newsroom</span>
+              <span className="text-base font-bold text-slate-100 font-headline">{siteConfig.name}</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
-              Independent investigative journalism, real-time macroeconomic intelligence, and global policy analysis.
+              {siteConfig.description}
             </p>
           </div>
 
@@ -247,7 +270,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               All reporting adheres to strict verification protocols and editorial neutrality standards.
             </p>
             <div className="text-[11px] font-mono text-slate-400">
-              © 2026 AMG Newsroom Operating System. All rights reserved.
+              © {new Date().getFullYear()} {siteConfig.name}. All rights reserved.
             </div>
           </div>
         </div>

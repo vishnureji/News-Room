@@ -35,6 +35,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { newsroomService } from '@/lib/services/newsroom-service';
+import { siteConfig } from '@/lib/config';
 import { NotificationItem } from '@/types/newsroom';
 
 interface NavItem {
@@ -44,13 +45,13 @@ interface NavItem {
   badge?: string | number;
 }
 
-const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
+const getNavGroups = (articlesCount: number, assignmentsCount: number, commentsCount: number): { group: string; items: NavItem[] }[] => [
   {
     group: 'Editorial Core',
     items: [
       { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-      { label: 'Articles & CMS', href: '/admin/articles', icon: FileText, badge: '43' },
-      { label: 'Assignments Desk', href: '/admin/assignments', icon: CheckSquare, badge: '3' },
+      { label: 'Articles & CMS', href: '/admin/articles', icon: FileText, badge: articlesCount > 0 ? articlesCount : undefined },
+      { label: 'Assignments Desk', href: '/admin/assignments', icon: CheckSquare, badge: assignmentsCount > 0 ? assignmentsCount : undefined },
       { label: 'Editorial Calendar', href: '/admin/calendar', icon: Calendar },
       { label: 'Breaking News Ticker', href: '/admin/breaking-news', icon: Radio },
     ],
@@ -74,11 +75,11 @@ const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
   {
     group: 'Growth & Monetization',
     items: [
-      { label: 'SEO & Redirects', href: '/admin/seo', icon: Search, badge: '94' },
+      { label: 'SEO & Redirects', href: '/admin/seo', icon: Search, badge: '96' },
       { label: '1st-Party Analytics', href: '/admin/analytics', icon: BarChart3 },
       { label: 'Ad Placements', href: '/admin/advertising', icon: Megaphone },
       { label: 'Newsletters', href: '/admin/newsletters', icon: Mail },
-      { label: 'Comments Queue', href: '/admin/comments', icon: MessageSquare, badge: '1' },
+      { label: 'Comments Queue', href: '/admin/comments', icon: MessageSquare, badge: commentsCount > 0 ? commentsCount : undefined },
     ],
   },
   {
@@ -134,11 +135,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="h-16 px-5 border-b border-slate-800/80 flex items-center justify-between bg-[#0e131f]">
           <Link href="/admin" className="flex items-center gap-3 group">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-600 to-red-800 flex items-center justify-center font-bold text-white shadow-lg shadow-rose-900/30">
-              N
+              {siteConfig.name.charAt(0) || 'N'}
             </div>
             <div>
               <div className="font-bold text-sm tracking-wide text-white flex items-center gap-1.5">
-                AMG NEWSROOM
+                {siteConfig.name}
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 font-mono font-normal">
                   OS 2.0
                 </span>
@@ -167,7 +168,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Navigation List */}
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-6">
-          {NAV_GROUPS.map((group, gIdx) => (
+          {getNavGroups(
+            newsroomService.getArticles().length,
+            newsroomService.getAssignments().filter((a) => a.status !== 'completed').length,
+            newsroomService.getComments().filter((c) => c.status === 'pending').length
+          ).map((group, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <div className="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                 {group.group}

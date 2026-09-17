@@ -36,11 +36,11 @@ export default function AdminDashboard() {
     setBreakingNews(newsroomService.getBreakingNews());
   }, []);
 
-  const draftCount = 24;
-  const inReviewCount = articles.filter(a => a.status === 'in_review').length || 8;
-  const changesCount = articles.filter(a => a.status === 'changes_requested').length || 5;
-  const scheduledCount = articles.filter(a => a.status === 'scheduled').length || 12;
-  const publishedCount = 43;
+  const draftCount = articles.filter(a => a.status === 'draft').length;
+  const inReviewCount = articles.filter(a => a.status === 'in_review').length;
+  const changesCount = articles.filter(a => a.status === 'changes_requested').length;
+  const scheduledCount = articles.filter(a => a.status === 'scheduled').length;
+  const publishedCount = articles.filter(a => a.status === 'published').length;
 
   return (
     <div className="space-y-8 pb-12">

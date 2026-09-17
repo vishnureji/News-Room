@@ -1,13 +1,20 @@
 import type { Metadata } from 'next';
+import { siteConfig } from '@/lib/config';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AMG Newsroom | Global Journalism & Editorial Intelligence',
-  description: 'A production-grade newsroom operating system delivering investigative reporting, real-time economic intelligence, and deep-tech analysis.',
+  title: {
+    default: `${siteConfig.name} | ${siteConfig.description}`,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  metadataBase: new URL(siteConfig.url),
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'AMG Newsroom',
+    siteName: siteConfig.name,
+    title: siteConfig.name,
+    description: siteConfig.description,
   },
 };
 

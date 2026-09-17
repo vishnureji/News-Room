@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
-import { INITIAL_ARTICLES } from '@/lib/services/newsroom-service';
+import { newsroomService } from '@/lib/services/newsroom-service';
+import { siteConfig } from '@/lib/config';
 
 export async function GET() {
-  const recentArticles = INITIAL_ARTICLES.filter((a) => a.status === 'published');
+  const recentArticles = newsroomService.getArticles({ status: 'published' });
+  const baseUrl = siteConfig.url.replace(/\/$/, '');
 
   const newsItems = recentArticles
     .map(
       (art) => `
     <url>
-      <loc>https://newsroom.live/article/${art.slug}</loc>
+      <loc>${baseUrl}/article/${art.slug}</loc>
       <news:news>
         <news:publication>
-          <news:name>AMG Newsroom</news:name>
+          <news:name>${siteConfig.name}</news:name>
           <news:language>en</news:language>
         </news:publication>
         <news:publication_date>${new Date(art.published_at || art.created_at).toISOString()}</news:publication_date>
