@@ -41,9 +41,7 @@ export default function ReaderAccountPage() {
       if (user) {
         loadUserBookmarks(user.id);
       } else {
-        // Fallback default sample bookmark from local catalog
-        const published = newsroomService.getArticles({ status: 'published' });
-        setBookmarkedArticles(published.slice(0, 2));
+        setBookmarkedArticles([]);
       }
     });
 
@@ -52,6 +50,8 @@ export default function ReaderAccountPage() {
       setUser(currentUser);
       if (currentUser) {
         loadUserBookmarks(currentUser.id);
+      } else {
+        setBookmarkedArticles([]);
       }
     });
 
@@ -62,12 +62,12 @@ export default function ReaderAccountPage() {
 
   const loadUserBookmarks = async (userId: string) => {
     const ids = await db.getBookmarks(userId);
-    const all = newsroomService.getArticles();
+    const all = await newsroomService.getArticlesAsync({ status: 'published' });
     if (ids.length > 0) {
       const filtered = all.filter((a) => ids.includes(a.id));
       setBookmarkedArticles(filtered);
     } else {
-      setBookmarkedArticles(all.slice(0, 2));
+      setBookmarkedArticles([]);
     }
   };
 

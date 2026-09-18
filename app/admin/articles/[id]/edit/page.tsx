@@ -75,23 +75,30 @@ export default function ArticleEditorPage() {
   const allArticles = newsroomService.getArticles();
 
   useEffect(() => {
-    const loaded = newsroomService.getArticleById(articleId);
-    if (loaded) {
-      setArticle({ ...loaded });
-      if (loaded.revisions && loaded.revisions.length > 0) {
-        setSelectedRevisionForDiff(loaded.revisions[0]);
+    async function init() {
+      let loaded = newsroomService.getArticleById(articleId);
+      if (!loaded) {
+        const dbArt = await newsroomService.getArticleBySlugAsync(articleId);
+        if (dbArt) loaded = dbArt;
       }
-    } else {
-      const freshDraft = newsroomService.saveArticle({
-        id: articleId,
-        title: 'New Editorial Article Draft',
-        status: 'draft',
-        content_blocks: [
-          { id: 'b1', type: 'paragraph', content: { text: 'Start writing your news piece here...' } }
-        ]
-      });
-      setArticle(freshDraft);
+      if (loaded) {
+        setArticle({ ...loaded });
+        if (loaded.revisions && loaded.revisions.length > 0) {
+          setSelectedRevisionForDiff(loaded.revisions[0]);
+        }
+      } else {
+        const freshDraft = newsroomService.saveArticle({
+          id: articleId,
+          title: 'New Editorial Article Draft',
+          status: 'draft',
+          content_blocks: [
+            { id: 'b1', type: 'paragraph', content: { text: 'Start writing your news piece here...' } }
+          ]
+        });
+        setArticle(freshDraft);
+      }
     }
+    init();
   }, [articleId]);
 
   if (!article) {
@@ -139,54 +146,53 @@ export default function ArticleEditorPage() {
       initialContent = { text: 'Direct attributed statement', author: 'Source Name' };
     } else if (type === 'image') {
       initialContent = {
-        url: mediaList[0]?.url || 'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80',
-        caption: 'High-resolution photo caption',
+        url: mediaList[0]?.url || '',
+        caption: '',
         alt: 'Editorial photograph',
-        credit: 'AMG Photo Service'
+        credit: 'Staff Photo Desk'
       };
       initialSettings = { align: 'center' };
     } else if (type === 'gallery') {
       initialContent = {
         images: [
-          { url: mediaList[0]?.url || '', caption: 'First panel view' },
-          { url: mediaList[1]?.url || '', caption: 'Second panel view' }
+          { url: mediaList[0]?.url || '', caption: '' },
+          { url: mediaList[1]?.url || '', caption: '' }
         ],
         layout: 'grid'
       };
     } else if (type === 'video') {
       initialContent = {
-        url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        url: '',
         title: 'Video Report: Key Insights',
         caption: 'Special broadcast coverage',
-        duration: '03:45'
+        duration: '00:00'
       };
     } else if (type === 'audio') {
       initialContent = {
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        title: 'Newsroom Audio Dispatch: Ep 14',
-        host: 'Vishnu Reji & Anu Sharma',
-        duration: '14:20'
+        url: '',
+        title: 'Newsroom Audio Dispatch',
+        host: 'Editorial Desk',
+        duration: '00:00'
       };
     } else if (type === 'list') {
       initialContent = {
         listType: 'bullet',
-        items: ['First key analytical point', 'Second critical economic metric', 'Third legislative implication']
+        items: ['Key analytical point', 'Critical economic indicator', 'Policy and regulatory impact']
       };
     } else if (type === 'table') {
       initialContent = {
-        headers: ['Metric / Indicator', 'FY26 Target', 'YoY Growth'],
+        headers: ['Indicator', 'Target Metric', 'Growth / Delta'],
         rows: [
-          ['Capital Outlay ($B)', '$120.4 B', '+18.4%'],
-          ['Semiconductor Capex', '$18.2 B', '+45.0%'],
-          ['Clean Grid Storage', '$14.8 B', '+31.8%']
+          ['Primary Metric', '—', '—'],
+          ['Secondary Metric', '—', '—']
         ]
       };
     } else if (type === 'button') {
-      initialContent = { label: 'Explore Full Economic Dataset', url: 'https://example.com/dataset', target: '_blank', variant: 'primary' };
+      initialContent = { label: 'Explore Story Dataset', url: '#', target: '_blank', variant: 'primary' };
     } else if (type === 'divider') {
       initialContent = { style: 'ornament' };
     } else if (type === 'embed') {
-      initialContent = { embedType: 'youtube', embedUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', caption: 'Live stream briefing' };
+      initialContent = { embedType: 'youtube', embedUrl: '', caption: 'Broadcast stream / embed' };
     } else if (type === 'advertisement') {
       initialContent = { adSlotId: adSlots[0]?.id || 'ad-slot-1', customSlotName: 'In-Article Inline Responsive' };
     } else if (type === 'related_articles') {
@@ -1389,7 +1395,7 @@ export default function ArticleEditorPage() {
               </div>
 
               <div className="space-y-2.5">
-                {internalLinks.map((item, idx) => (
+                {internalLinks.map((item: any, idx: number) => (
                   <div
                     key={idx}
                     className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5"

@@ -31,10 +31,26 @@ export default function PublicHomepage() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribedToast, setSubscribedToast] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    setArticles(newsroomService.getArticles({ status: 'published' }));
-    setAdSlots(newsroomService.getAdSlots());
-    setSections(newsroomService.getHomepageSections());
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [arts, cats] = await Promise.all([
+          newsroomService.getArticlesAsync({ status: 'published' }),
+          newsroomService.getCategoriesAsync()
+        ]);
+        setArticles(arts);
+        setAdSlots(newsroomService.getAdSlots());
+        setSections(newsroomService.getHomepageSections());
+      } catch (err) {
+        console.error('Failed to load homepage data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, []);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -56,6 +72,32 @@ export default function PublicHomepage() {
   const topAd = adSlots.find((s) => s.slot_type === 'header' && s.is_active);
   const inFeedAd = adSlots.find((s) => s.slot_type === 'between_articles' && s.is_active);
 
+  if (loading) {
+    return (
+      <div className="space-y-12 pb-16 animate-pulse">
+        {/* Skeleton Top Bar */}
+        <div className="h-24 rounded-2xl bg-slate-900/60 border border-slate-800/60" />
+        {/* Skeleton Hero Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="aspect-[16/9] rounded-2xl bg-slate-900/80 border border-slate-800/80" />
+            <div className="h-6 w-1/3 bg-slate-800 rounded" />
+            <div className="h-8 w-4/5 bg-slate-800 rounded" />
+            <div className="h-16 w-full bg-slate-900 rounded" />
+          </div>
+          <div className="lg:col-span-4 space-y-6">
+            <div className="h-6 w-1/2 bg-slate-800 rounded" />
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-20 bg-slate-900/60 rounded-xl border border-slate-800/50" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12 pb-16">
       {/* Toast */}
@@ -67,13 +109,13 @@ export default function PublicHomepage() {
       )}
 
       {/* Top Header Leaderboard Ad */}
-      {topAd && (
+      {topAd && topAd.image_url && (
         <div className="p-3 bg-[#0b0f19] rounded-2xl border border-slate-800/80 text-center space-y-1 max-w-5xl mx-auto shadow-sm">
           <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">
             Sponsored Partner Message
           </span>
           <a
-            href={topAd.destination_url}
+            href={topAd.destination_url || '#'}
             target="_blank"
             rel="noopener noreferrer"
             className="block rounded-xl overflow-hidden border border-slate-700/60 max-h-32 group"
@@ -286,7 +328,7 @@ export default function PublicHomepage() {
           );
         }
 
-        if (sec.layout === 'magazine_split') {
+        if (sec.layout === 'magazine_split' && (secArticles[0] || articles[0])) {
           const featured = secArticles[0] || articles[0];
           const sidebarItems = secArticles.slice(1, 5);
 
@@ -310,7 +352,7 @@ export default function PublicHomepage() {
                     <Link href={`/article/${featured.slug}`} className="block aspect-video overflow-hidden">
                       <img
                         src={featured.featured_image.url}
-                        alt=""
+                        alt={featured.featured_image.alt_text || featured.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         style={{
                           objectPosition: `${featured.featured_image.focal_x || 50}% ${
@@ -335,12 +377,12 @@ export default function PublicHomepage() {
                       </p>
                     )}
                     <div className="pt-2 text-[11px] text-slate-400 font-mono">
-                      By {featured.authors[0]?.display_name} • {featured.reading_time_mins} min read
+                      By {featured.authors[0]?.display_name || 'Editorial Desk'} • {featured.reading_time_mins || 3} min read
                     </div>
                   </div>
                 </div>
 
-                {/* 4 Compact Headlines with Numbers (5 Cols) */}
+                {/* Compact Headlines with Numbers (5 Cols) */}
                 <div className="lg:col-span-5 space-y-3">
                   {sidebarItems.map((item, idx) => (
                     <div
@@ -357,7 +399,7 @@ export default function PublicHomepage() {
                           </h4>
                         </Link>
                         <span className="text-[10px] font-mono text-slate-400 block">
-                          {item.primary_category?.name} • {formatDate(item.published_at)}
+                          {item.primary_category?.name || 'Investigation'} • {formatDate(item.published_at)}
                         </span>
                       </div>
                     </div>
@@ -369,6 +411,7 @@ export default function PublicHomepage() {
         }
 
         if (sec.layout === 'video_showcase') {
+          const leadStory = secArticles[0] || articles[0];
           return (
             <section
               key={sec.id}
@@ -384,27 +427,42 @@ export default function PublicHomepage() {
                     <p className="text-xs text-purple-300/80">{sec.subtitle}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20 self-start sm:self-auto">
-                  Broadcast Stream & Podcasts
+                <span className="text-[11px] font-mono text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20 self-start sm:self-auto flex items-center gap-1.5">
+                  <Radio className="w-3 h-3 text-purple-400 animate-pulse" />
+                  <span>Broadcast Studio & Podcasts</span>
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Video Card */}
-                <div className="rounded-2xl bg-black/50 border border-slate-800 p-4 space-y-3">
-                  <div className="aspect-video rounded-xl overflow-hidden bg-slate-950 relative group">
-                    <video
-                      controls
-                      src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-                      className="w-full h-full object-cover"
-                    />
+                <div className="rounded-2xl bg-black/50 border border-slate-800 p-4 space-y-3 flex flex-col justify-between">
+                  <div className="aspect-video rounded-xl overflow-hidden bg-slate-950 relative group flex items-center justify-center">
+                    {leadStory?.featured_image ? (
+                      <img
+                        src={leadStory.featured_image.url}
+                        alt={leadStory.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                        <Play className="w-12 h-12 text-purple-400" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-full bg-purple-600/90 hover:bg-purple-500 text-white flex items-center justify-center shadow-xl shadow-purple-950/80 transition-all cursor-pointer">
+                        <Play className="w-6 h-6 ml-0.5" />
+                      </div>
+                    </div>
+                    <span className="absolute bottom-3 right-3 px-2 py-1 rounded bg-black/80 text-[10px] font-mono font-bold text-white border border-white/10">
+                      LIVE BRIEFING
+                    </span>
                   </div>
                   <div>
                     <span className="text-[10px] font-mono uppercase font-bold text-purple-400">
-                      4K Press Briefing
+                      Editorial Video Briefing
                     </span>
                     <h4 className="text-sm font-bold text-white mt-1">
-                      Post-Budget Finance Ministry Press Conference Broadcast
+                      {leadStory ? leadStory.title : 'Macro Policy & Global Semiconductor Dispatches'}
                     </h4>
                   </div>
                 </div>
@@ -417,19 +475,24 @@ export default function PublicHomepage() {
                       <span>The Daily Dispatch Podcast</span>
                     </div>
                     <h4 className="text-base font-bold text-white font-headline">
-                      Episode 14: Decoding the Semiconductor Subsidy Race & Optical Compute
+                      Executive Intelligence Audio Edition: Weekly Macro & Technology Analysis
                     </h4>
                     <p className="text-xs text-slate-300 font-editorial">
-                      Executive Editor Vishnu Reji sits down with leading photonics architects to analyze next-generation computing clusters.
+                      Join our senior investigative correspondents as they break down sovereign fiscal strategies, high-compute datacenters, and emerging semiconductor supply chains.
                     </p>
                   </div>
 
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <audio
-                      controls
-                      src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
-                      className="w-full h-8 accent-purple-500"
-                    />
+                  <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center">
+                        <Play className="w-4 h-4 ml-0.5" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-200 block">Listen to Latest Episode</span>
+                        <span className="text-[10px] text-slate-400 font-mono">18 mins • High-Bitrate Audio</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono text-purple-400 font-semibold">Available on Web & Feed</span>
                   </div>
                 </div>
               </div>

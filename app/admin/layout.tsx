@@ -171,7 +171,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {getNavGroups(
             newsroomService.getArticles().length,
             newsroomService.getAssignments().filter((a) => a.status !== 'completed').length,
-            newsroomService.getComments().filter((c) => c.status === 'pending').length
+            newsroomService.getComments().filter((c: any) => !c.is_resolved).length
           ).map((group, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <div className="px-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">

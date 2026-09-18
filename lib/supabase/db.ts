@@ -1,233 +1,289 @@
-import { supabase } from './client';
-import { Article, Category, Tag, MediaAsset, AuthorProfile } from '@/types/newsroom';
+import { Article, Category, Tag, MediaAsset, AuthorProfile, Assignment, BreakingNewsItem } from '@/types/newsroom';
+
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') return '';
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+};
 
 export const db = {
   // Articles
-  async getArticles(status?: string): Promise<Article[] | null> {
+  async getArticles(status?: string, categoryId?: string, search?: string): Promise<Article[]> {
     try {
-      let query = supabase.from('articles').select(`
-        *,
-        primary_category:categories(*),
-        featured_image:media(*),
-        article_authors(profiles(*)),
-        article_tags(tags(*))
-      `).order('published_at', { ascending: false });
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (categoryId) params.set('categoryId', categoryId);
+      if (search) params.set('search', search);
 
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      const { data, error } = await query;
-      if (error || !data) return null;
-
-      return data.map((item: any) => ({
-        id: item.id,
-        slug: item.slug,
-        title: item.title,
-        subtitle: item.subtitle,
-        excerpt: item.excerpt,
-        content_blocks: item.content_blocks || [],
-        primary_category_id: item.primary_category_id,
-        primary_category: item.primary_category,
-        featured_image_id: item.featured_image_id,
-        featured_image: item.featured_image,
-        authors: item.article_authors?.map((a: any) => a.profiles).filter(Boolean) || [],
-        tags: item.article_tags?.map((t: any) => t.tags).filter(Boolean) || [],
-        status: item.status,
-        visibility: item.visibility,
-        reading_time_mins: item.reading_time_mins || 3,
-        seo: item.seo || {
-          meta_title: item.title,
-          meta_description: item.excerpt || '',
-          schema_type: 'NewsArticle',
-          score: 85
-        },
-        scheduled_for: item.scheduled_for,
-        published_at: item.published_at,
-        created_by: item.created_by || 'auth-1',
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
+      const res = await fetch(`${getBaseUrl()}/api/articles?${params.toString()}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return [];
+      return await res.json();
     } catch (e) {
-      console.warn('Supabase getArticles fallback:', e);
-      return null;
+      console.warn('db.getArticles error:', e);
+      return [];
     }
   },
 
   async getArticleBySlug(slug: string): Promise<Article | null> {
     try {
-      const { data, error } = await supabase
-        .from('articles')
-        .select(`
-          *,
-          primary_category:categories(*),
-          featured_image:media(*),
-          article_authors(profiles(*)),
-          article_tags(tags(*))
-        `)
-        .eq('slug', slug)
-        .single();
-
-      if (error || !data) return null;
-
-      return {
-        id: data.id,
-        slug: data.slug,
-        title: data.title,
-        subtitle: data.subtitle,
-        excerpt: data.excerpt,
-        content_blocks: data.content_blocks || [],
-        primary_category_id: data.primary_category_id,
-        primary_category: data.primary_category,
-        featured_image_id: data.featured_image_id,
-        featured_image: data.featured_image,
-        authors: data.article_authors?.map((a: any) => a.profiles).filter(Boolean) || [],
-        tags: data.article_tags?.map((t: any) => t.tags).filter(Boolean) || [],
-        status: data.status,
-        visibility: data.visibility,
-        reading_time_mins: data.reading_time_mins || 3,
-        seo: data.seo || {
-          meta_title: data.title,
-          meta_description: data.excerpt || '',
-          schema_type: 'NewsArticle',
-          score: 85
-        },
-        scheduled_for: data.scheduled_for,
-        published_at: data.published_at,
-        created_by: data.created_by || 'auth-1',
-        created_at: data.created_at,
-        updated_at: data.updated_at
-      };
+      const res = await fetch(`${getBaseUrl()}/api/articles/${encodeURIComponent(slug)}`, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
-      console.warn('Supabase getArticleBySlug fallback:', e);
+      console.warn('db.getArticleBySlug error:', e);
       return null;
     }
   },
 
-  async upsertArticle(article: Partial<Article>): Promise<boolean> {
+  async upsertArticle(article: Partial<Article>): Promise<Article | null> {
     try {
-      const { error } = await supabase.from('articles').upsert({
-        id: article.id,
-        slug: article.slug,
-        title: article.title,
-        subtitle: article.subtitle,
-        excerpt: article.excerpt,
-        content_blocks: article.content_blocks,
-        primary_category_id: article.primary_category_id,
-        featured_image_id: article.featured_image_id,
-        status: article.status,
-        visibility: article.visibility,
-        reading_time_mins: article.reading_time_mins,
-        published_at: article.published_at,
-        updated_at: new Date().toISOString()
+      const res = await fetch(`${getBaseUrl()}/api/articles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(article)
       });
-      return !error;
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
-      console.warn('Supabase upsertArticle error:', e);
+      console.warn('db.upsertArticle error:', e);
+      return null;
+    }
+  },
+
+  async deleteArticle(slugOrId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/articles/${encodeURIComponent(slugOrId)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      console.warn('db.deleteArticle error:', e);
       return false;
     }
   },
 
   // Categories
-  async getCategories(): Promise<Category[] | null> {
+  async getCategories(): Promise<Category[]> {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('display_order', { ascending: true });
+      const res = await fetch(`${getBaseUrl()}/api/categories`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      console.warn('db.getCategories error:', e);
+      return [];
+    }
+  },
 
-      if (error || !data) return null;
-      return data;
+  async upsertCategory(cat: Partial<Category>): Promise<Category | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cat)
+      });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
       return null;
+    }
+  },
+
+  async deleteCategory(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/categories?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
     }
   },
 
   // Tags
-  async getTags(): Promise<Tag[] | null> {
+  async getTags(): Promise<Tag[]> {
     try {
-      const { data, error } = await supabase.from('tags').select('*');
-      if (error || !data) return null;
-      return data;
+      const res = await fetch(`${getBaseUrl()}/api/tags`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async upsertTag(tag: Partial<Tag>): Promise<Tag | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tag)
+      });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
       return null;
     }
   },
 
-  // Media & Storage
-  async getMedia(): Promise<MediaAsset[] | null> {
+  // Media
+  async getMedia(): Promise<MediaAsset[]> {
     try {
-      const { data, error } = await supabase
-        .from('media')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const res = await fetch(`${getBaseUrl()}/api/media`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
 
-      if (error || !data) return null;
-      return data;
+  async uploadMedia(formData: FormData): Promise<MediaAsset | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/media`, {
+        method: 'POST',
+        body: formData
+      });
+      if (!res.ok) return null;
+      return await res.json();
     } catch (e) {
       return null;
     }
   },
 
-  async uploadStorageFile(
-    bucket: string,
-    path: string,
-    fileBody: File | Blob | ArrayBuffer
-  ): Promise<{ url: string | null; error: string | null }> {
+  async deleteMedia(id: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(path, fileBody, { upsert: true });
+      const res = await fetch(`${getBaseUrl()}/api/media?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  },
 
-      if (error) return { url: null, error: error.message };
+  // Authors / Staff
+  async getAuthors(): Promise<AuthorProfile[]> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/authors`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
 
-      const { data: publicUrlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(path);
+  async upsertAuthor(profile: Partial<AuthorProfile>): Promise<AuthorProfile | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/authors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
 
-      return { url: publicUrlData.publicUrl, error: null };
-    } catch (err: any) {
-      return { url: null, error: err?.message || 'Storage upload failed' };
+  // Assignments
+  async getAssignments(): Promise<Assignment[]> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/assignments`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async upsertAssignment(assignment: Partial<Assignment>): Promise<Assignment | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/assignments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignment)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async deleteAssignment(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/assignments?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  // Breaking News
+  async getBreakingNews(): Promise<BreakingNewsItem[]> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/breaking-news`, { cache: 'no-store' });
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  async upsertBreakingNews(item: Partial<BreakingNewsItem>): Promise<BreakingNewsItem | null> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/breaking-news`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async deleteBreakingNews(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${getBaseUrl()}/api/breaking-news?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      return res.ok;
+    } catch (e) {
+      return false;
     }
   },
 
   // Reader Bookmarks
   async getBookmarks(userId: string): Promise<string[]> {
+    if (typeof window === 'undefined') return [];
     try {
-      const { data, error } = await supabase
-        .from('reader_bookmarks')
-        .select('article_id')
-        .eq('user_id', userId);
-
-      if (error || !data) return [];
-      return data.map((b: any) => b.article_id);
+      const stored = localStorage.getItem(`newsroom_bookmarks_${userId}`);
+      return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
     }
   },
 
   async toggleBookmark(userId: string, articleId: string): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
     try {
-      const { data } = await supabase
-        .from('reader_bookmarks')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('article_id', articleId)
-        .maybeSingle();
-
-      if (data) {
-        await supabase
-          .from('reader_bookmarks')
-          .delete()
-          .eq('user_id', userId)
-          .eq('article_id', articleId);
-        return false;
+      const key = `newsroom_bookmarks_${userId}`;
+      const stored = localStorage.getItem(key);
+      let list: string[] = stored ? JSON.parse(stored) : [];
+      const exists = list.includes(articleId);
+      if (exists) {
+        list = list.filter(id => id !== articleId);
       } else {
-        await supabase
-          .from('reader_bookmarks')
-          .insert({ user_id: userId, article_id: articleId });
-        return true;
+        list.push(articleId);
       }
+      localStorage.setItem(key, JSON.stringify(list));
+      return !exists;
     } catch {
       return false;
     }

@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server';
 import { newsroomService } from '@/lib/services/newsroom-service';
 import { siteConfig } from '@/lib/config';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
-  const articles = newsroomService.getArticles({ status: 'published' });
+  const articles = await newsroomService.getArticlesAsync({ status: 'published' });
   const baseUrl = siteConfig.url.replace(/\/$/, '');
 
   const itemsXml = articles

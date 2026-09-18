@@ -75,21 +75,31 @@ export default function MediaLibraryPage() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [loading, setLoading] = useState(true);
+
   // Load items
-  const reloadMedia = () => {
-    const items = newsroomService.getMediaAssets(
-      searchQuery,
-      activeFolder === 'all' ? undefined : activeFolder
-    );
-    setMediaItems(items);
-    if (selectedAsset) {
-      const refreshed = items.find((m) => m.id === selectedAsset.id);
-      if (refreshed) {
-        setSelectedAsset(refreshed);
-        setEditAltText(refreshed.alt_text || '');
-        setEditCaption(refreshed.caption || '');
-        setEditCredit(refreshed.credit || '');
+  const reloadMedia = async () => {
+    setLoading(true);
+    try {
+      await newsroomService.getMediaAssetsAsync();
+      const items = newsroomService.getMediaAssets(
+        searchQuery,
+        activeFolder === 'all' ? undefined : activeFolder
+      );
+      setMediaItems(items);
+      if (selectedAsset) {
+        const refreshed = items.find((m) => m.id === selectedAsset.id);
+        if (refreshed) {
+          setSelectedAsset(refreshed);
+          setEditAltText(refreshed.alt_text || '');
+          setEditCaption(refreshed.caption || '');
+          setEditCredit(refreshed.credit || '');
+        }
       }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -434,12 +444,44 @@ export default function MediaLibraryPage() {
               />
             </div>
 
+            <div className="sm:col-span-2 space-y-2 p-4 rounded-xl bg-slate-900/80 border border-dashed border-slate-700">
+              <label className="text-xs font-semibold text-slate-300 block">Direct File Upload to Supabase Storage</label>
+              <input
+                type="file"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploadFilename(file.name);
+                    setIsGeneratingVariants(true);
+                    try {
+                      const uploaded = await newsroomService.uploadMediaFile(file, {
+                        alt_text: uploadAltText || file.name,
+                        caption: uploadCaption,
+                        credit: uploadCredit || 'AMG Media Desk'
+                      });
+                      if (uploaded) {
+                        setIsUploading(false);
+                        setStatusMessage({ type: 'success', text: `Uploaded ${file.name} to Supabase Storage!` });
+                        setTimeout(() => setStatusMessage(null), 3500);
+                        await reloadMedia();
+                      }
+                    } catch (err: any) {
+                      setStatusMessage({ type: 'error', text: err?.message || 'Upload failed' });
+                    } finally {
+                      setIsGeneratingVariants(false);
+                    }
+                  }
+                }}
+                className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-rose-600 file:text-white hover:file:bg-rose-500 cursor-pointer"
+              />
+              <span className="text-[10px] text-slate-500 block">Or enter a remote URL below:</span>
+            </div>
+
             <div className="sm:col-span-2 space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Source Asset URL (Remote or Upload URL)</label>
+              <label className="text-xs font-semibold text-slate-300">Source Asset URL (Remote WebP/JPG/MP4 URL)</label>
               <input
                 type="url"
-                required
-                placeholder="https://images.unsplash.com/... or https://domain.com/asset.mp4"
+                placeholder="https://your-cdn.com/asset.webp or https://storage.newsroom.live/..."
                 value={uploadUrl}
                 onChange={(e) => setUploadUrl(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-rose-500"

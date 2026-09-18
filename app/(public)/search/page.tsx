@@ -12,9 +12,12 @@ export default function SearchPage() {
   const [allArticles, setAllArticles] = useState<Article[]>([]);
 
   useEffect(() => {
-    const list = newsroomService.getArticles({ status: 'published' });
-    setAllArticles(list);
-    setResults(list);
+    async function loadArticles() {
+      const list = await newsroomService.getArticlesAsync({ status: 'published' });
+      setAllArticles(list);
+      setResults(list);
+    }
+    loadArticles();
   }, []);
 
   const handleSearch = (q: string) => {

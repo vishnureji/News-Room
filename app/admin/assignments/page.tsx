@@ -32,35 +32,52 @@ export default function AssignmentsPage() {
   const [deadline, setDeadline] = useState('2026-09-18T18:00');
   const [notes, setNotes] = useState('');
 
-  const authors = newsroomService.getAuthors();
+  const [authors, setAuthors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [items, auths] = await Promise.all([
+        newsroomService.getAssignmentsAsync(),
+        newsroomService.getAuthorsAsync()
+      ]);
+      setAssignments(items);
+      setAuthors(auths);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setAssignments(newsroomService.getAssignments());
+    loadData();
   }, []);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     newsroomService.createAssignment({
       title,
-      assigned_to_name: assignedTo,
-      assigned_by_name: 'Vishnu Reji (Editor-in-Chief)',
+      assigned_to: authors.find(a => a.display_name === assignedTo)?.id || undefined,
+      assigned_by: authors[0]?.id,
       deadline: new Date(deadline).toISOString(),
       priority,
       status: 'assigned',
       notes
     });
 
-    setAssignments([...newsroomService.getAssignments()]);
     setTitle('');
     setNotes('');
     setIsCreating(false);
+    await loadData();
   };
 
-  const handleStatusUpdate = (id: string, newStatus: Assignment['status']) => {
+  const handleStatusUpdate = async (id: string, newStatus: Assignment['status']) => {
     newsroomService.updateAssignmentStatus(id, newStatus);
-    setAssignments([...newsroomService.getAssignments()]);
+    await loadData();
   };
 
   const handleStartDraftingArticle = (asg: Assignment) => {

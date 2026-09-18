@@ -41,19 +41,56 @@ export default function PublicArticlePage() {
   const [newComment, setNewComment] = useState('');
   const [isBookmarked, setIsBookmarked] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const art = newsroomService.getArticleBySlug(slug);
-    if (art) {
-      setArticle(art);
-    } else {
-      const fallback = newsroomService.getArticles()[0];
-      setArticle(fallback);
+    async function loadArticle() {
+      setLoading(true);
+      try {
+        const [art, arts] = await Promise.all([
+          newsroomService.getArticleBySlugAsync(slug),
+          newsroomService.getArticlesAsync({ status: 'published' })
+        ]);
+        setArticle(art || null);
+        setAllArticles(arts);
+      } catch (err) {
+        console.error('Failed to load article:', err);
+      } finally {
+        setLoading(false);
+      }
     }
-    setAllArticles(newsroomService.getArticles());
+    loadArticle();
   }, [slug]);
 
+  if (loading) {
+    return (
+      <div className="py-32 text-center text-slate-400 space-y-3">
+        <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm font-medium">Loading investigative story from live database...</p>
+      </div>
+    );
+  }
+
   if (!article) {
-    return <div className="py-24 text-center text-slate-400">Loading investigative story...</div>;
+    return (
+      <div className="py-24 text-center max-w-lg mx-auto space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-rose-500">
+          <ArrowLeft className="w-8 h-8" />
+        </div>
+        <h1 className="text-2xl font-bold text-white font-headline">Story Not Found</h1>
+        <p className="text-sm text-slate-400">
+          The requested article may have been archived, rescheduled, or the link may be inaccurate.
+        </p>
+        <div className="pt-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all"
+          >
+            <span>Return to Frontpage</span>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const primaryAuthor = article.authors[0] || {

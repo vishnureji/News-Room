@@ -12,11 +12,25 @@ export default function BreakingNewsAdminPage() {
   const [isActive, setIsActive] = useState(true);
   const [priority, setPriority] = useState(1);
 
+  const [loading, setLoading] = useState(true);
+
+  const loadBreaking = async () => {
+    setLoading(true);
+    try {
+      const live = await newsroomService.getBreakingNewsAsync();
+      setItems(live);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setItems(newsroomService.getBreakingNews());
+    loadBreaking();
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -27,14 +41,14 @@ export default function BreakingNewsAdminPage() {
       is_active: isActive
     });
 
-    setItems(newsroomService.getBreakingNews());
     setTitle('');
     setTargetUrl('');
+    await loadBreaking();
   };
 
-  const handleDismiss = (id: string) => {
+  const handleDismiss = async (id: string) => {
     newsroomService.dismissBreakingNews(id);
-    setItems(newsroomService.getBreakingNews());
+    await loadBreaking();
   };
 
   return (

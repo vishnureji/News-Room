@@ -16,7 +16,10 @@ import {
   MoreVertical,
   ExternalLink,
   Sparkles,
-  ArrowUpDown
+  ArrowUpDown,
+  Trash2,
+  RefreshCw,
+  Database
 } from 'lucide-react';
 import { newsroomService } from '@/lib/services/newsroom-service';
 import { Article, ArticleStatus } from '@/types/newsroom';
@@ -26,10 +29,50 @@ export default function ArticlesListPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+
+  const fetchArticles = async () => {
+    setLoading(true);
+    try {
+      const live = await newsroomService.getArticlesAsync();
+      setArticles(live);
+    } catch (err) {
+      console.error('Failed to fetch articles:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setArticles(newsroomService.getArticles());
+    fetchArticles();
   }, []);
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
+    const ok = newsroomService.deleteArticle(id);
+    if (ok) {
+      setArticles((prev) => prev.filter((a) => a.id !== id));
+    }
+  };
+
+  const handleSeedDatabase = async () => {
+    if (!confirm('Re-seed Supabase database with fresh production journalism datasets?')) return;
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/seed', { method: 'POST' });
+      if (res.ok) {
+        await fetchArticles();
+        alert('Supabase database seeded successfully!');
+      } else {
+        alert('Failed to seed database.');
+      }
+    } catch {
+      alert('Error connecting to seed endpoint.');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const filteredArticles = articles.filter((art) => {
     const matchesTab =
@@ -93,20 +136,46 @@ export default function ArticlesListPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-headline">
+          <h1 className="text-2xl font-bold tracking-tight text-white font-headline flex items-center gap-3">
             Articles & Editorial Desk
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Supabase Live DB
+            </span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Manage, review, verify SEO and publish journalistic pieces across all beats.
+            Manage, review, verify SEO and publish journalistic pieces across all beats in PostgreSQL.
           </p>
         </div>
-        <Link
-          href="/admin/articles/new"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/50 transition-all self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create New Article</span>
-        </Link>
+
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          <button
+            onClick={fetchArticles}
+            disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all"
+            title="Refresh from Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Sync DB</span>
+          </button>
+
+          <button
+            onClick={handleSeedDatabase}
+            disabled={seeding}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 text-xs font-semibold border border-indigo-700/50 transition-all"
+            title="Re-seed database with complete dataset"
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>{seeding ? 'Seeding...' : 'Seed Data'}</span>
+          </button>
+
+          <Link
+            href="/admin/articles/new"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/50 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Article</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -140,53 +209,69 @@ export default function ArticlesListPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search headline, tag, category..."
+            placeholder="Search headline, excerpt, beat..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-rose-500 transition-colors"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-rose-500"
           />
         </div>
       </div>
 
       {/* Articles Table */}
-      <div className="bg-[#0e131f] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-[#0e131f] rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-800">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#080b12] text-slate-400 uppercase font-mono text-[10px] tracking-wider border-b border-slate-800">
               <tr>
-                <th className="px-5 py-3.5">Headline & Category</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5">Author</th>
-                <th className="px-5 py-3.5">SEO Score</th>
-                <th className="px-5 py-3.5">Updated</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
+                <th className="px-5 py-4 font-semibold">Article & Beat</th>
+                <th className="px-5 py-4 font-semibold">Status</th>
+                <th className="px-5 py-4 font-semibold">Author / Byline</th>
+                <th className="px-5 py-4 font-semibold">SEO Score</th>
+                <th className="px-5 py-4 font-semibold">Updated</th>
+                <th className="px-5 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {filteredArticles.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
-                    No articles found matching criteria.
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
+                    <div className="w-6 h-6 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <span>Loading articles from Supabase PostgreSQL...</span>
+                  </td>
+                </tr>
+              ) : filteredArticles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
+                    No articles found matching the selected filter.
                   </td>
                 </tr>
               ) : (
                 filteredArticles.map((art) => (
-                  <tr key={art.id} className="hover:bg-slate-800/30 transition-colors group">
-                    <td className="px-5 py-4 max-w-md">
-                      <div className="space-y-1">
+                  <tr
+                    key={art.id}
+                    className="hover:bg-slate-850/40 transition-colors group"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="space-y-1 max-w-lg">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <span
+                            className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-semibold"
+                            style={{
+                              backgroundColor: `${art.primary_category?.color || '#2563EB'}20`,
+                              color: art.primary_category?.color || '#3b82f6',
+                            }}
+                          >
                             {art.primary_category?.name || 'General'}
                           </span>
-                          {art.visibility === 'paywall_premium' && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">
-                              PREMIUM
+                          {art.visibility === 'members_only' && (
+                            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              Members
                             </span>
                           )}
                         </div>
                         <Link
                           href={`/admin/articles/${art.id}/edit`}
-                          className="font-bold text-slate-100 hover:text-rose-400 transition-colors text-sm line-clamp-2"
+                          className="font-semibold text-slate-100 group-hover:text-rose-400 transition-colors block text-sm line-clamp-1"
                         >
                           {art.title}
                         </Link>
@@ -210,7 +295,7 @@ export default function ArticlesListPage() {
                           />
                         )}
                         <span className="font-medium text-slate-200">
-                          {art.authors[0]?.display_name || 'Staff Editor'}
+                          {art.authors[0]?.display_name || 'Editorial Desk'}
                         </span>
                       </div>
                     </td>
@@ -247,6 +332,13 @@ export default function ArticlesListPage() {
                             <ExternalLink className="w-3.5 h-3.5" />
                           </Link>
                         )}
+                        <button
+                          onClick={() => handleDelete(art.id, art.title)}
+                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition-colors"
+                          title="Delete Article"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

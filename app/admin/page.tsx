@@ -30,10 +30,14 @@ export default function AdminDashboard() {
   const [breakingNews, setBreakingNews] = useState(newsroomService.getBreakingNews());
 
   useEffect(() => {
-    setArticles(newsroomService.getArticles());
-    setAssignments(newsroomService.getAssignments());
-    setAnalytics(newsroomService.getAnalyticsOverview());
-    setBreakingNews(newsroomService.getBreakingNews());
+    async function loadDashboard() {
+      await newsroomService.syncFromSupabase();
+      setArticles(newsroomService.getArticles());
+      setAssignments(newsroomService.getAssignments());
+      setAnalytics(newsroomService.getAnalyticsOverview());
+      setBreakingNews(newsroomService.getBreakingNews());
+    }
+    loadDashboard();
   }, []);
 
   const draftCount = articles.filter(a => a.status === 'draft').length;

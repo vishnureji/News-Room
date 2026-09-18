@@ -24,12 +24,14 @@ import {
   Monitor
 } from 'lucide-react';
 import { newsroomService } from '@/lib/services/newsroom-service';
-import { RedirectRule } from '@/types/newsroom';
+import { siteConfig } from '@/lib/config';
+import { RedirectRule, Article } from '@/types/newsroom';
 
 export default function SEOSuitePage() {
   const [redirects, setRedirects] = useState<RedirectRule[]>([]);
   const [healthReport, setHealthReport] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [latestArticle, setLatestArticle] = useState<Article | null>(null);
   
   // New Redirect Form
   const [isAdding, setIsAdding] = useState(false);
@@ -54,6 +56,13 @@ export default function SEOSuitePage() {
 
   useEffect(() => {
     reloadSEO();
+    newsroomService.getArticlesAsync({ status: 'published' }).then((arts) => {
+      if (arts && arts.length > 0) {
+        setLatestArticle(arts[0]);
+        setSerpTitle(arts[0].title);
+        if (arts[0].excerpt) setSerpDesc(arts[0].excerpt);
+      }
+    });
   }, []);
 
   const reloadSEO = () => {
@@ -102,30 +111,31 @@ export default function SEOSuitePage() {
 
   const sampleJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
+    '@type': latestArticle?.seo?.schema_type || 'NewsArticle',
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': 'https://newsroom.live/article/india-budget-2026-fiscal-stimulus-infrastructure'
+      '@id': `${siteConfig.url}/article/${latestArticle?.slug || 'union-budget-2026-infrastructure-green-energy-package'}`
     },
-    headline: 'Union Budget 2026 Unveils Landmark $120B Infrastructure & Green Energy Package',
-    image: ['https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80'],
-    datePublished: '2026-09-17T06:00:00Z',
-    dateModified: '2026-09-17T08:30:00Z',
+    headline: latestArticle?.title || serpTitle,
+    description: latestArticle?.excerpt || serpDesc,
+    image: [latestArticle?.featured_image?.url || `${siteConfig.url}/og-image.png`],
+    datePublished: latestArticle?.published_at || new Date().toISOString(),
+    dateModified: latestArticle?.updated_at || new Date().toISOString(),
     author: [
       {
         '@type': 'Person',
-        name: 'Vishnu Reji',
-        jobTitle: 'Editor-in-Chief',
-        url: 'https://newsroom.live/author/auth-1'
+        name: latestArticle?.authors?.[0]?.display_name || 'Vishnu Reji',
+        jobTitle: latestArticle?.authors?.[0]?.designation || 'Editor-in-Chief',
+        url: `${siteConfig.url}/author/${latestArticle?.authors?.[0]?.id || 'desk'}`
       }
     ],
     publisher: {
       '@type': 'NewsMediaOrganization',
-      name: 'AMG Newsroom',
-      url: 'https://newsroom.live',
+      name: siteConfig.name,
+      url: siteConfig.url,
       logo: {
         '@type': 'ImageObject',
-        url: 'https://newsroom.live/logo.png'
+        url: `${siteConfig.url}/logo.png`
       }
     }
   };

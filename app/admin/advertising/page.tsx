@@ -57,8 +57,8 @@ export default function AdvertisingPage() {
       advertiser_name: advertiserName || 'Direct Sponsor',
       slot_type: slotType,
       ad_type: adType,
-      image_url: imageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=970&h=250&fit=crop&q=80',
-      destination_url: destinationUrl || 'https://example.com',
+      image_url: imageUrl || '',
+      destination_url: destinationUrl || '',
       cpm_rate: parseFloat(cpmRate) || 20,
       category_target: categoryTarget || undefined,
       is_active: true
@@ -228,7 +228,7 @@ export default function AdvertisingPage() {
               <label className="font-semibold text-slate-300">Creative Banner Image URL</label>
               <input
                 type="url"
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://your-domain.com/ad-banner.webp"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-rose-500"

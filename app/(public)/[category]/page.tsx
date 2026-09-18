@@ -15,15 +15,27 @@ export default function CategoryArchivePage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (!catSlug) return;
-    const cats = newsroomService.getCategories();
-    const foundCat = cats.find(c => c.slug === catSlug);
-    if (foundCat) {
-      setCategory(foundCat);
-      const all = newsroomService.getArticles();
-      setArticles(all.filter(a => a.primary_category?.slug === catSlug || a.primary_category_id === foundCat.id));
+    async function loadCategory() {
+      setLoading(true);
+      try {
+        const [cats, arts] = await Promise.all([
+          newsroomService.getCategoriesAsync(),
+          newsroomService.getArticlesAsync({ status: 'published' })
+        ]);
+        const foundCat = cats.find(c => c.slug === catSlug);
+        setCategory(foundCat || null);
+        setArticles(arts.filter(a => a.primary_category?.slug === catSlug || (foundCat && a.primary_category_id === foundCat.id)));
+      } catch (e) {
+        console.error('Error loading category:', e);
+      } finally {
+        setLoading(false);
+      }
     }
+    loadCategory();
   }, [catSlug]);
 
   if (!catSlug) return null;

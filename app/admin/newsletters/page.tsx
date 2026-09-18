@@ -82,7 +82,7 @@ export default function NewslettersAdminPage() {
       article_ids: selectedArticleIds,
       status: isSendNow ? 'sent' : 'scheduled',
       sent_at: isSendNow ? new Date().toISOString() : undefined,
-      scheduled_for: isSendNow ? undefined : '2026-09-18T06:00:00Z',
+      scheduled_for: isSendNow ? undefined : new Date(Date.now() + 86400000).toISOString(),
       recipients_count: recipientList.includes('42,800') ? 42800 : 18500,
       open_rate: isSendNow ? 49.5 : undefined,
       click_rate: isSendNow ? 15.2 : undefined
